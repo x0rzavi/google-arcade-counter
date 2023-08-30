@@ -10,7 +10,7 @@ feat_badges_list = [
     "Create and Manage Cloud Resources",
     "Perform Foundational Infrastructure Tasks in Google Cloud",
     "Perform Foundational Data, ML, and AI Tasks in Google Cloud",
-    "Configure Service Accounts and IAM roles for Google Cloud",
+    "Configure Service Accounts and IAM Roles for Google Cloud",
     "Integrate BigQuery Data and Google Workspace using Apps Script",
     "Develop with Apps Script and AppSheet",
     "Set Up and Configure a Cloud Environment in Google Cloud",
@@ -19,8 +19,8 @@ feat_badges_list = [
     "Secure BigLake Data",
     "Protect Sensitive Data with Data Loss Prevention",
     "Tag and Discover BigLake Data",
-    "Store, Process, and Manage Data - Console",
-    "Analyze BigQuery data in Connected Sheets",
+    "Store, Process, and Manage Data on Google Cloud - Console",
+    "Analyze BigQuery Data in Connected Sheets",
     "Optimize Costs for Google Kubernetes Engine",
     "Get Started with Eventarc",
     "Get Started with Dataplex",
@@ -102,7 +102,7 @@ def count(badges_dict):
     total_badges = normal_badges + feat_badges
     if (arcade_level >= 4) and (arcade_trivia >= 2) and (total_badges >= 30):
         milestone = 'Ultimate Milestone Reached'
-        bonus_pt = 9
+        bonus_pt = 10
     elif (arcade_level >= 4) and (arcade_trivia >= 2) and (total_badges >= 21):
         milestone = 'Milestone 3 Reached'
         bonus_pt = 6
@@ -118,8 +118,13 @@ def count(badges_dict):
 
     normal_badges_pt = normal_badges // 3
     feat_badges_pt = 2 * (feat_badges // 3)
-    total_pt = arcade_level + arcade_trivia + normal_badges_pt + feat_badges_pt + bonus_pt
-    
+    normal_badges_rem = 3 - normal_badges % 3
+    feat_badges_rem = 3 - feat_badges % 3
+    total_badges_rem = normal_badges_rem + feat_badges_rem 
+    total_badges_rem_pt = total_badges_rem // 3
+    total_pt = arcade_level + arcade_trivia + normal_badges_pt + feat_badges_pt \
+        + bonus_pt + total_badges_rem_pt
+
     print()
     print('Greetings!', name)
     print('Arcade Level Badges: {} | Points: {}'.format(arcade_level, arcade_level))
@@ -131,9 +136,11 @@ def count(badges_dict):
     print()
 
     if (normal_badges % 3 != 0):
-        print('Complete {} More Skill Badges to +1 Arcade Point!'.format(3 - normal_badges % 3))
+        print('Complete {} More Skill Badges to +1 Arcade Point!'\
+              .format(normal_badges_rem))
     if (feat_badges % 3 != 0):
-        print('Complete {} More Featured Skill Badges to +1 Arcade Point!'.format(3 - feat_badges % 3))
+        print('Complete {} More Featured Skill Badges to +1 Arcade Point!'\
+              .format(feat_badges_rem))
 
 while (True):
     url = str(input('Enter Google Skills Boost Profile URL: '))
