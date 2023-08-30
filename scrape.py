@@ -41,7 +41,6 @@ feat_badges_list = [
 
 def badges(url):
     # function to output dictionary of badge name and completion dates
-    # only SKILL badges and NOT COMPLETION badges
     global soup, name
     if "://" in url:
         pass
