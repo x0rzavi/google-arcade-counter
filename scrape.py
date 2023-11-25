@@ -56,7 +56,12 @@ def getBadges(url: str) -> dict:
     if "://" not in url:
         url = "https://" + url
     html = requests.get(url)
-    reqdContent = SoupStrainer(name="div", class_="profile-badges")
+    reqdTags = {
+        "div": {"class_": "profile-badges"},
+        "ql-dialog": "",
+        "title": "",
+    }
+    reqdContent = SoupStrainer(reqdTags)
     soupContent = BeautifulSoup(html.text, "lxml", parse_only=reqdContent)
 
     badges = soupContent.find_all("div", class_="profile-badge")
@@ -66,19 +71,18 @@ def getBadges(url: str) -> dict:
         badgeImage = badge.find("img")["src"]
         badgeName = badgeNameRaw.text.strip()
         badgeDate = badgeDateRaw.text.replace("Earned ", "").strip()
-        reqdDetails = SoupStrainer(
-            name="ql-dialog", attrs={"headline": badgeName.replace("&", "&amp;")}
+        reqdDetails = soupContent.find(
+            "ql-dialog", attrs={"headline": badgeName.replace("&", "&amp;")}
         )
-        soupDetails = BeautifulSoup(html.text, "lxml", parse_only=reqdDetails)
-        badgeDescRaw = soupDetails.find(name="p")
+        badgeDescRaw = reqdDetails.find("p")
         badgeDesc = badgeDescRaw.text.strip()
         badgesDict[badgeName] = (badgeDate, badgeImage, badgeDesc)
 
     return badgesDict
 
 
-def count(badgesDict: dict) -> None:
-    # function to print count of badges under appropriate categories
+def countBadges(badgesDict: dict) -> None:
+    # function to print countBadges of badges under appropriate categories
     arcadeLevel = arcadeTrivia = featBadges = normalBadges = novBadges = 0
     patternLevel = r"Level \d+"
 
@@ -139,7 +143,6 @@ def count(badgesDict: dict) -> None:
     )
 
     print()
-    # print("Greetings!", name)
     print("Arcade Level Badges: {} | Points: {}".format(arcadeLevel, arcadeLevel))
     print("Arcade Trivia Badges: {} | Points: {}".format(arcadeTrivia, arcadeTrivia))
     print("Skill Badges: {} | Points: {}".format(normalBadges, normalBadgesPt))
@@ -153,15 +156,16 @@ def count(badgesDict: dict) -> None:
         print(
             "Complete {} More Skill Badges to +1 Arcade Point!".format(normalBadgesRem)
         )
-        # if featBadges % 3 != 0:
-        #     print(
-        #         "Complete {} More Featured Skill Badges to +1 Arcade Point!".format(
-        #             featBadgesRem
-        #         )
-        #     )
+    # November is already over :)
+    # if featBadges % 3 != 0:
+    #     print(
+    #         "Complete {} More Featured Skill Badges to +1 Arcade Point!".format(
+    #             featBadgesRem
+    #         )
+    #     )
 
 
 while True:
-    url = str(input("Enter Google Skills Boost Profile URL: "))
-    count(getBadges(url))
+    url = input("Enter Google Skills Boost Profile URL: ")
+    countBadges(getBadges(url))
     print()
