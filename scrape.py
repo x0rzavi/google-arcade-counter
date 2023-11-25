@@ -2,11 +2,21 @@
 
 import requests
 import re
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, SoupStrainer
 from PIL import Image
 import pytesseract
 
-feat_badges_list = [
+novBadgesList = (
+    "Introduction to Large Language Models",
+    "Introduction to Generative AI",
+    "Introduction to Responsible AI",
+    "Digital Transformation with Google Cloud",
+    "Innovating with Data and Google Cloud",
+    "Infrastructure and Application Modernization with Google Cloud",
+    "Understanding Google Cloud Security and Operations",
+)
+
+featBadgesList = (
     "Create and Manage Cloud Resources",
     "Perform Foundational Infrastructure Tasks in Google Cloud",
     "Perform Foundational Data, ML, and AI Tasks in Google Cloud",
@@ -37,111 +47,121 @@ feat_badges_list = [
     "The Basics of Google Cloud Compute",
     "Networking Fundamentals on Google Cloud",
     "Streaming Analytics into BigQuery",
-]
+)
 
-def badges(url):
+
+def getBadges(url: str) -> dict:
     # function to output dictionary of badge name and completion dates
-    global soup, name
-    if "://" in url:
-        pass
-    else:
+    badgesDict = dict()
+    if "://" not in url:
         url = "https://" + url
     html = requests.get(url)
-    soup = BeautifulSoup(html.text, 'lxml')
+    reqdContent = SoupStrainer(name="div", class_="profile-badges")
+    soupContent = BeautifulSoup(html.text, "lxml", parse_only=reqdContent)
 
-    try:
-        badges_dict = dict()
-        badges = soup.find_all('div', class_='profile-badge')
-        name = soup.find('h1', class_='ql-headline-1').text
-        for badge in badges:
-            badge_name_raw = badge.find('span', class_='ql-subhead-1 l-mts')
-            badge_date_raw = badge.find('span', class_='ql-body-2 l-mbs')
-            badge_name = badge_name_raw.text.strip()
-            badge_date = badge_date_raw.text.replace('Earned ', '').strip()
-            badges_dict[badge_name] = badge_date
+    badges = soupContent.find_all("div", class_="profile-badge")
+    for badge in badges:
+        badgeNameRaw = badge.find("span", class_="l-mts")
+        badgeDateRaw = badge.find("span", class_="l-mbs")
+        badgeImage = badge.find("img")["src"]
+        badgeName = badgeNameRaw.text.strip()
+        badgeDate = badgeDateRaw.text.replace("Earned ", "").strip()
+        reqdDetails = SoupStrainer(
+            name="ql-dialog", attrs={"headline": badgeName.replace("&", "&amp;")}
+        )
+        soupDetails = BeautifulSoup(html.text, "lxml", parse_only=reqdDetails)
+        badgeDescRaw = soupDetails.find(name="p")
+        badgeDesc = badgeDescRaw.text.strip()
+        badgesDict[badgeName] = (badgeDate, badgeImage, badgeDesc)
 
-        return badges_dict
-    except Exception:
-        pass
+    return badgesDict
 
-def count(badges_dict):
+
+def count(badgesDict: dict) -> None:
     # function to print count of badges under appropriate categories
-    arcade_level = arcade_trivia = feat_badges = normal_badges = 0
-    pattern_level = r'Level \d+'
+    arcadeLevel = arcadeTrivia = featBadges = normalBadges = novBadges = 0
+    patternLevel = r"Level \d+"
 
-    for badge in badges_dict:
-        if re.search(pattern_level, badge):
-            arcade_level += 1
-        elif 'Trivia' in badge:
-            arcade_trivia += 1
-        elif (badge in feat_badges_list) and ('Aug' in badges_dict[badge]):
-            feat_badges += 1
+    for badge, details in badgesDict.items():
+        date = details[0]
+        img = details[1]
+        desc = details[2]
+        if re.search(patternLevel, badge):
+            arcadeLevel += 1
+        elif "Trivia" in badge:
+            arcadeTrivia += 1
+        elif badge in novBadgesList:
+            novBadges += 1
+        elif (badge in featBadgesList) and ("Aug" in date):
+            featBadges += 1
         else:
-            try:
-                dialog = soup.find('ql-dialog', {'headline': badge})
-                badge_desc = dialog.find('p').text
-            except Exception:
-                pass
-
-            if 'skill badge' in badge_desc:
-                normal_badges += 1
+            if "skill badge" in desc:
+                normalBadges += 1
             else:
                 # detemine if badge is completion badge using OCR
-                try:
-                    img = soup.find('img', {'alt': 'Badge for ' + badge})
-                    src = img['src']
-                    response = requests.get(src, stream=True)
-                    image = Image.open(response.raw)
-                    text = pytesseract.image_to_string(image)
-                except Exception:
-                    pass
-                if 'completion' not in text.lower():
-                    normal_badges += 1
+                response = requests.get(img, stream=True)
+                image = Image.open(response.raw)
+                text = pytesseract.image_to_string(image)
+                if "completion" not in text.lower():
+                    normalBadges += 1
 
-    total_badges = normal_badges + feat_badges
-    if (arcade_level >= 4) and (arcade_trivia >= 2) and (total_badges >= 30):
-        milestone = 'Ultimate Milestone Reached'
-        bonus_pt = 10
-    elif (arcade_level >= 4) and (arcade_trivia >= 2) and (total_badges >= 21):
-        milestone = 'Milestone 3 Reached'
-        bonus_pt = 6
-    elif (arcade_level >= 2) and (arcade_level >= 1) and (total_badges >= 15):
-        milestone = 'Milestone 2 Reached'
-        bonus_pt = 4
-    elif (arcade_level >= 2) and (arcade_trivia >= 1) and (total_badges >= 9):
-        milestone = 'Milestone 1 Reached'
-        bonus_pt = 2
+    total_badges = normalBadges + featBadges
+    if (arcadeLevel >= 4) and (arcadeTrivia >= 2) and (total_badges >= 30):
+        milestone = "Ultimate Milestone Reached"
+        bonusPt = 10
+    elif (arcadeLevel >= 4) and (arcadeTrivia >= 2) and (total_badges >= 21):
+        milestone = "Milestone 3 Reached"
+        bonusPt = 6
+    elif (arcadeLevel >= 2) and (arcadeLevel >= 1) and (total_badges >= 15):
+        milestone = "Milestone 2 Reached"
+        bonusPt = 4
+    elif (arcadeLevel >= 2) and (arcadeTrivia >= 1) and (total_badges >= 9):
+        milestone = "Milestone 1 Reached"
+        bonusPt = 2
     else:
-        milestone = 'No Milestones Reached'
-        bonus_pt = 0
+        milestone = "No Milestones Reached"
+        bonusPt = 0
 
-    normal_badges_pt = normal_badges // 3
-    feat_badges_pt = 2 * (feat_badges // 3)
-    normal_badges_rem = 3 - normal_badges % 3
-    feat_badges_rem = 3 - feat_badges % 3
-    total_badges_rem = normal_badges_rem + feat_badges_rem 
-    total_badges_rem_pt = total_badges_rem // 3
-    total_pt = arcade_level + arcade_trivia + normal_badges_pt + feat_badges_pt \
-        + bonus_pt + total_badges_rem_pt
+    normalBadgesPt = normalBadges // 3
+    featBadgesPt = 2 * (featBadges // 3)
+    normalBadgesRem = 3 - normalBadges % 3
+    featBadgesRem = 3 - featBadges % 3
+    totalBadgesRem = normalBadgesRem + featBadgesRem
+    totalBadgesRemPt = totalBadgesRem // 3
+    total_pt = (
+        arcadeLevel
+        + arcadeTrivia
+        + normalBadgesPt
+        + featBadgesPt
+        + novBadges
+        + bonusPt
+        + totalBadgesRemPt
+    )
 
     print()
-    print('Greetings!', name)
-    print('Arcade Level Badges: {} | Points: {}'.format(arcade_level, arcade_level))
-    print('Arcade Trivia Badges: {} | Points: {}'.format(arcade_trivia, arcade_trivia))
-    print('Skill Badges: {} | Points: {}'.format(normal_badges, normal_badges_pt))
-    print('Featured Skill Badges: {} | Points: {}'.format(feat_badges, feat_badges_pt))
-    print('Total Arcade Points: {}'.format(total_pt))
+    # print("Greetings!", name)
+    print("Arcade Level Badges: {} | Points: {}".format(arcadeLevel, arcadeLevel))
+    print("Arcade Trivia Badges: {} | Points: {}".format(arcadeTrivia, arcadeTrivia))
+    print("Skill Badges: {} | Points: {}".format(normalBadges, normalBadgesPt))
+    print("Featured Skill Badges: {} | Points: {}".format(featBadges, featBadgesPt))
+    print("November Badges: {} | Points: {}".format(novBadges, novBadges))
+    print("Total Arcade Points: {}".format(total_pt))
     print(milestone)
     print()
 
-    if (normal_badges % 3 != 0):
-        print('Complete {} More Skill Badges to +1 Arcade Point!'\
-              .format(normal_badges_rem))
-    if (feat_badges % 3 != 0):
-        print('Complete {} More Featured Skill Badges to +1 Arcade Point!'\
-              .format(feat_badges_rem))
+    if normalBadges % 3 != 0:
+        print(
+            "Complete {} More Skill Badges to +1 Arcade Point!".format(normalBadgesRem)
+        )
+        # if featBadges % 3 != 0:
+        #     print(
+        #         "Complete {} More Featured Skill Badges to +1 Arcade Point!".format(
+        #             featBadgesRem
+        #         )
+        #     )
 
-while (True):
-    url = str(input('Enter Google Skills Boost Profile URL: '))
-    count(badges(url))
+
+while True:
+    url = str(input("Enter Google Skills Boost Profile URL: "))
+    count(getBadges(url))
     print()
