@@ -112,7 +112,7 @@ def countBadges(badgesDict: dict) -> None:
     total_badges = normalBadges + featBadges
     if (arcadeLevel >= 4) and (arcadeTrivia >= 2) and (total_badges >= 30):
         milestone = "Ultimate Milestone Reached"
-        bonusPt = 10
+        bonusPt = 9
     elif (arcadeLevel >= 4) and (arcadeTrivia >= 2) and (total_badges >= 21):
         milestone = "Milestone 3 Reached"
         bonusPt = 6
